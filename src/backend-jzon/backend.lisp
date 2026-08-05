@@ -7,7 +7,8 @@
 
 (defun use-jzon-backend ()
   "Bind *JSON-BACKEND* to a fresh jzon backend. Returns the backend."
-  (setf *json-backend* (make-jzon-backend)))
+  (prog1 (setf *json-backend* (make-jzon-backend))
+    (install-serdes-json-hooks)))
 
 (defun %to-jzon (value)
   "Map protocol :null → CL:NULL for jzon. NIL stays NIL (JSON false)."
