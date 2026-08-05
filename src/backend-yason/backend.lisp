@@ -6,7 +6,8 @@
   (make-instance 'yason-backend))
 
 (defun use-yason-backend ()
-  (setf *json-backend* (make-yason-backend)))
+  (prog1 (setf *json-backend* (make-yason-backend))
+    (install-serdes-json-hooks)))
 
 (defun %encode-value (value stream)
   (cond

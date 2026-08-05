@@ -19,6 +19,7 @@
            #:null-p
            #:true-p
            #:false-p
-           #:install-http-json-hooks))
+           #:install-http-json-hooks
+           #:install-serdes-json-hooks))
 
 (in-package #:json-protocol)

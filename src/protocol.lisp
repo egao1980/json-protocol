@@ -72,3 +72,30 @@
                 (acons :json #'decode
                        (remove :json (symbol-value des) :key #'car))))))
     t))
+
+(defun install-serdes-json-hooks ()
+  "If serdes-protocol is loaded, register a thin :json adapter that calls ENCODE/DECODE.
+   Soft hook until json-protocol hard-depends on serdes (#133). Returns T when registered."
+  (unless *json-backend*
+    (return-from install-serdes-json-hooks nil))
+  (let ((pkg (find-package :serdes-protocol)))
+    (unless pkg
+      (return-from install-serdes-json-hooks nil))
+    (let ((register (find-symbol "REGISTER-FORMAT" pkg))
+          (encode-gf (find-symbol "BACKEND-ENCODE" pkg))
+          (decode-gf (find-symbol "BACKEND-DECODE" pkg))
+          (serdes-base (find-symbol "SERDES-BACKEND" pkg)))
+      (unless (and register encode-gf decode-gf serdes-base (find-class serdes-base nil))
+        (return-from install-serdes-json-hooks nil))
+      (unless (find-class 'json-serdes-adapter nil)
+        (eval `(defclass json-serdes-adapter (,serdes-base) ()))
+        (eval
+         `(progn
+            (defmethod ,encode-gf ((backend json-serdes-adapter) value &key stream)
+              (declare (ignore backend))
+              (encode value :stream stream))
+            (defmethod ,decode-gf ((backend json-serdes-adapter) source &key)
+              (declare (ignore backend))
+              (decode source)))))
+      (funcall register :json (make-instance 'json-serdes-adapter))
+      t)))

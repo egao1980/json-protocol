@@ -1,5 +1,5 @@
 (defsystem "json-backend-jzon"
-  :version "0.1.1"
+  :version "0.1.2"
   :description "json-protocol backend — com.inuoe.jzon (stack default)"
   :author "egao1980"
   :license "MIT"
