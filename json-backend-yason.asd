@@ -1,5 +1,5 @@
 (defsystem "json-backend-yason"
-  :version "0.1.0"
+  :version "0.1.1"
   :description "json-protocol backend — yason (alternate / migration)"
   :author "egao1980"
   :license "MIT"
