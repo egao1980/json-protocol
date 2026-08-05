@@ -11,29 +11,6 @@
                (:file "protocol"))
   :in-order-to ((test-op (test-op "json-protocol/tests"))))
 
-(defsystem "json-backend-jzon"
-  :version "0.1.0"
-  :description "json-protocol backend — com.inuoe.jzon (stack default)"
-  :author "egao1980"
-  :license "MIT"
-  :depends-on ("json-protocol" "com.inuoe.jzon")
-  :serial t
-  :pathname "src/backend-jzon"
-  :components ((:file "package")
-               (:file "backend"))
-  :in-order-to ((test-op (test-op "json-protocol/tests"))))
-
-(defsystem "json-backend-yason"
-  :version "0.1.0"
-  :description "json-protocol backend — yason (alternate / migration)"
-  :author "egao1980"
-  :license "MIT"
-  :depends-on ("json-protocol" "yason")
-  :serial t
-  :pathname "src/backend-yason"
-  :components ((:file "package")
-               (:file "backend")))
-
 (defsystem "json-protocol/tests"
   :depends-on ("json-protocol" "json-backend-jzon" "json-backend-yason" "rove")
   :pathname "tests"
