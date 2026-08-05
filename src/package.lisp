@@ -1,7 +1,9 @@
 (defpackage #:json-protocol
   (:use #:cl)
-  (:nicknames #:json)
+  ;; Nick stack-json (not json) — avoids clashes with other CL JSON packages.
+  (:nicknames #:stack-json)
   (:export #:json-error
+
            #:json-parse-error
            #:json-encode-error
            #:json-limit-error

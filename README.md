@@ -13,9 +13,9 @@ Brief: [`cl-stack/docs/capabilities/json-protocol.md`](https://github.com/egao19
 ## Quick use
 
 ```lisp
-(asdf:load-system "json-backend-jzon")   ; sets json:*json-backend*
-(json:encode '(("a" . 1) ("b" . :null))) ; => "{\"a\":1,\"b\":null}"
-(json:decode "{\"a\":false}")            ; hash-table, "a" → NIL
+(asdf:load-system "json-backend-jzon")              ; sets *json-backend*
+(json-protocol:encode '(("a" . 1) ("b" . :null))) ; => "{\"a\":1,\"b\":null}"
+(stack-json:decode "{\"a\":false}")                 ; nick; "a" → NIL
 ```
 
 Value mapping: objects → string-key hash-tables; arrays → vectors; JSON `null` → `:null`; `false`/`true` → `nil`/`t`. Encoding `nil` → JSON `false`.
