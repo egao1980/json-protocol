@@ -43,6 +43,7 @@
     ((eq value :null) :null)
     ((eq value 'null) :null)
     ((null value) nil) ; JSON false — before LISTP (NIL is a list)
+    ((stringp value) value) ; before vectorp — strings are vectors
     ((hash-table-p value)
      (let ((out (make-hash-table :test #'equal)))
        (maphash (lambda (k v) (setf (gethash k out) (%from-yason v))) value)

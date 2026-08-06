@@ -28,10 +28,13 @@
      :also-tests t
      :with '("json-backend-jzon" "json-backend-yason")
      :sources '(("babel" :ql)
+                ("trivial-gray-streams" :ql)
+                ("serdes-protocol" :oci)
                 ("com.inuoe.jzon" :ql)
                 ("yason" :ql)
                 ("trivial-features" :ql)
-                ("cl-unicode" :ql)))))
+                ("cl-unicode" :ql)
+                ("rove" :ql)))))
 
 (format t "~&; ci: install phase done~%")
 (uiop:quit 0)

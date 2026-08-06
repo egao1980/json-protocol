@@ -15,6 +15,7 @@
   (cond
     ((eq value :null) 'null)
     ((null value) nil)
+    ((stringp value) value) ; before vectorp — strings are vectors
     ((hash-table-p value)
      (let ((out (make-hash-table :test #'equal)))
        (maphash (lambda (k v)
@@ -41,6 +42,7 @@
   "Map jzon CL:NULL → :null."
   (cond
     ((eq value 'null) :null)
+    ((stringp value) value)
     ((hash-table-p value)
      (let ((out (make-hash-table :test #'equal)))
        (maphash (lambda (k v) (setf (gethash k out) (%from-jzon v))) value)
