@@ -20,6 +20,9 @@
            #:true-p
            #:false-p
            #:install-http-json-hooks
-           #:install-serdes-json-hooks))
+           #:install-serdes-json-hooks
+           #:json-serdes-backend
+           #:make-json-serdes-backend
+           #:use-json-serdes-backend))
 
 (in-package #:json-protocol)
