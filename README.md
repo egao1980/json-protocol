@@ -8,7 +8,8 @@ CLOS JSON encode/decode for [cl-stack](https://github.com/egao1980/cl-stack) (RF
 | `json-backend-jzon` | **Default** — [com.inuoe.jzon](https://github.com/Zulu-Inuoe/jzon) |
 | `json-backend-yason` | Alternate — [yason](https://github.com/phmarek/yason) |
 
-Brief: [`cl-stack/docs/capabilities/json-protocol.md`](https://github.com/egao1980/cl-stack/blob/main/docs/capabilities/json-protocol.md) · Issues [#91](https://github.com/egao1980/cl-stack/issues/91) / [#97](https://github.com/egao1980/cl-stack/issues/97).
+OCI **0.2.0** — hard-implements [`serdes-protocol`](https://github.com/egao1980/serdes-protocol) `:json` (JSONL + event pull).  
+**Cookbook:** [json.md](https://github.com/egao1980/cl-stack/blob/main/docs/cookbooks/json.md) · [serdes.md](https://github.com/egao1980/cl-stack/blob/main/docs/cookbooks/serdes.md) · Brief: [json-protocol.md](https://github.com/egao1980/cl-stack/blob/main/docs/capabilities/json-protocol.md).
 
 ## Quick use
 
