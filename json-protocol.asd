@@ -4,7 +4,7 @@
   :author "egao1980"
   :license "MIT"
   :depends-on ("babel" "serdes-protocol")
-  :properties (:cl-repo (:ci (:with ("json-backend-jzon" "json-backend-yason") :sources (("babel" :ql) ("trivial-gray-streams" :ql) ("serdes-protocol" :oci) ("com.inuoe.jzon" :ql) ("yason" :ql) ("trivial-features" :ql) ("cl-unicode" :ql) ("rove" :ql)))))
+  :properties (:cl-repo (:ci (:with ("json-backend-jzon" "json-backend-yason") :sources (("serdes-protocol" :oci)))))
   :serial t
   :pathname "src"
   :components ((:file "package")
