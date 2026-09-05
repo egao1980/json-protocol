@@ -5,6 +5,8 @@
   (ok (string= "null" (encode :null)))
   (ok (string= "false" (encode nil)))
   (ok (string= "true" (encode t)))
+  (ok (string= "false" (encode :false)))
+  (ok (string= "true" (encode :true)))
   (ok (string= "42" (encode 42)))
   (ok (eq :null (decode "null")))
   (ok (eq nil (decode "false")))

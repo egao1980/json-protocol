@@ -5,7 +5,7 @@
 ;;;   array  → vector
 ;;;   null   → :null
 ;;;   false  → nil    true → t
-;;; Encode: nil → JSON false; :null → JSON null.
+;;; Encode: nil / :false → JSON false; t / :true → JSON true; :null → JSON null.
 
 (defvar *json-backend* nil
   "Current JSON backend object (satisfies BACKEND-ENCODE / BACKEND-DECODE).")
@@ -43,11 +43,11 @@
 
 (defun encode-to-octets (value &key (false-nil nil))
   "UTF-8 octets of (ENCODE VALUE)."
-  (babel:string-to-octets (encode value :false-nil false-nil) :encoding :utf-8))
+  (encoding-protocol:encode (encode value :false-nil false-nil)))
 
 (defun decode-octets (octets &key)
   "DECODE UTF-8 OCTETS."
-  (decode (babel:octets-to-string octets :encoding :utf-8)))
+  (decode (encoding-protocol:decode octets)))
 
 (defun install-http-json-hooks ()
   "If http-protocol is loaded, bind *json-encoder* / *json-decoder* and :json serdes.

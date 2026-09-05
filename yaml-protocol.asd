@@ -3,7 +3,7 @@
   :description "CLOS YAML 1.2 encode/decode for cl-stack; JSON is a subset (same Lisp mapping as json-protocol); implements serdes-protocol :yaml"
   :author "egao1980"
   :license "MIT"
-  :depends-on ("babel" "json-protocol" "serdes-protocol")
+  :depends-on ("encoding-protocol" "json-protocol" "serdes-protocol")
   :serial t
   :pathname "src/yaml"
   :components ((:file "package")

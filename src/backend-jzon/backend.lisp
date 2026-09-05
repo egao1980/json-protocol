@@ -14,6 +14,8 @@
   "Map protocol :null → CL:NULL for jzon. NIL stays NIL (JSON false)."
   (cond
     ((eq value :null) 'null)
+    ((eq value :false) nil)
+    ((eq value :true) t)
     ((null value) nil)
     ((stringp value) value) ; before vectorp — strings are vectors
     ((hash-table-p value)
@@ -55,7 +57,7 @@
   (etypecase source
     (string source)
     ((vector (unsigned-byte 8))
-     (babel:octets-to-string source :encoding :utf-8))
+     (encoding-protocol:decode source))
     (stream
      (with-output-to-string (o)
        (loop for c = (read-char source nil nil)

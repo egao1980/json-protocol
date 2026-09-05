@@ -13,9 +13,9 @@
   (cond
     ((eq value :null)
      (write-string "null" stream))
-    ((null value)
+    ((or (eq value :false) (null value))
      (write-string "false" stream))
-    ((eq value t)
+    ((or (eq value :true) (eq value t))
      (write-string "true" stream))
     ((hash-table-p value)
      (yason:encode value stream))
@@ -60,7 +60,7 @@
         (text (etypecase source
                 (string source)
                 ((vector (unsigned-byte 8))
-                 (babel:octets-to-string source :encoding :utf-8))
+                 (encoding-protocol:decode source))
                 (stream
                  (with-output-to-string (o)
                    (loop for c = (read-char source nil nil)

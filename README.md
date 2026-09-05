@@ -10,9 +10,12 @@ YAML 1.2 is a **superset of JSON** (JSON schema). `yaml-protocol` lives in this 
 | `json-backend-jzon` | **Default** — [com.inuoe.jzon](https://github.com/Zulu-Inuoe/jzon) |
 | `json-backend-yason` | Alternate — [yason](https://github.com/phmarek/yason) |
 | `yaml-protocol` | YAML 1.2 (comments, block, anchors, multi-doc). Any JSON is valid YAML. |
+| `toml-protocol` | TOML v1.0 (tomlet decode + native emit). serdes `:toml`. |
+| `schema-protocol-toml` | [TOML Schema](https://toml-schema.org/) (`.tosd`) + Taplo `#:schema` / `$schema` → JSON Schema. |
 
-OCI **0.2.0** — hard-implements [`serdes-protocol`](https://github.com/egao1980/serdes-protocol) `:json` (JSONL + event pull).  
+OCI **0.3.0** — hard-implements [`serdes-protocol`](https://github.com/egao1980/serdes-protocol) `:json` (JSONL + event pull).  
 `yaml-protocol` **0.1.0** implements `:yaml`.  
+`toml-protocol` **0.1.0** implements `:toml`.  
 **Cookbook:** [json.md](https://github.com/egao1980/cl-stack/blob/main/docs/cookbooks/json.md) · [serdes.md](https://github.com/egao1980/cl-stack/blob/main/docs/cookbooks/serdes.md) · Brief: [json-protocol.md](https://github.com/egao1980/cl-stack/blob/main/docs/capabilities/json-protocol.md).
 
 ## Quick use
@@ -23,7 +26,7 @@ OCI **0.2.0** — hard-implements [`serdes-protocol`](https://github.com/egao198
 (stack-json:decode "{\"a\":false}")                 ; nick; "a" → NIL
 ```
 
-Value mapping (JSON **and** YAML): objects → string-key hash-tables; arrays → vectors; `null` → `:null`; `false`/`true` → `nil`/`t`. Encoding `nil` → `false`.
+Value mapping (JSON **and** YAML): objects → string-key hash-tables; arrays → vectors; `null` → `:null`; `false`/`true` → `nil`/`t`. Encoding `nil` / `:false` → `false`; `t` / `:true` → `true`. Octets go through `encoding-protocol` (default UTF-8).
 
 ```lisp
 (asdf:load-system "yaml-protocol")
@@ -33,6 +36,28 @@ Value mapping (JSON **and** YAML): objects → string-key hash-tables; arrays �
 ```
 
 YAML 1.2 Core scalars (`NO` is a string, not boolean). Tags/merge keys are not implemented.
+
+```lisp
+(asdf:load-system "toml-protocol")
+(toml-protocol:decode "host = \"localhost\"")
+(toml-protocol:encode ht)
+```
+
+TOML has no null. Tables → hash-tables; arrays → vectors; booleans → `t`/`nil`.
+
+TOML itself has no schema language. Two ecosystem conventions:
+
+- **TOML Schema** (`.tosd`, [toml-schema.org](https://toml-schema.org/)) — native schema documents. Wave-1: `[toml-schema]` / `[types]` / `[elements]`, scalars, tables, arrays, collections, `oneof`/`anyof`, `allowedvalues` / `min`/`max` / `minlength`/`maxlength` / `pattern` / `format`. No `allof`, `if`/`then`/`else`, tuples, or remote fetch.
+- **JSON Schema** via Taplo — `#:schema` comment or `$schema` key. Validation delegates to `schema-protocol-json`.
+
+```lisp
+(asdf:load-system "schema-protocol-toml")
+(stack-schema:emit-schema 'user :format :toml)
+(stack-schema-toml:validate-instance tosd-doc toml-table)
+(stack-schema-toml:decode-validating "host = \"x\"" :schema tosd-doc)
+(stack-schema-toml:discover-schema "#:schema ./app.json
+host = \"x\"")
+```
 
 ## License
 

@@ -5,6 +5,8 @@
   (ok (string= "null" (encode :null)))
   (ok (string= "false" (encode nil)))
   (ok (string= "true" (encode t)))
+  (ok (string= "false" (encode :false)))
+  (ok (string= "true" (encode :true)))
   (ok (eq :null (decode "null")))
   (ok (eq nil (decode "false")))
   (let ((ht (decode "{\"a\":1,\"b\":null,\"c\":[9]}")))
