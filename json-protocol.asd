@@ -1,9 +1,9 @@
 (defsystem "json-protocol"
-  :version "0.2.0"
+  :version "0.2.1"
   :description "CLOS JSON encode/decode protocol for cl-stack (RFC 8259); implements serdes-protocol"
   :author "egao1980"
   :license "MIT"
-  :depends-on ("babel" "serdes-protocol")
+  :depends-on ("encoding-protocol" "serdes-protocol")
   :properties (:cl-repo (:ci (:with ("json-backend-jzon" "json-backend-yason" "yaml-protocol"))))
   :serial t
   :pathname "src"

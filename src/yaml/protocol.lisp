@@ -28,7 +28,7 @@
   (etypecase source
     (string source)
     ((vector (unsigned-byte 8))
-     (babel:octets-to-string source :encoding :utf-8))
+     (encoding-protocol:decode source))
     (stream
      (with-output-to-string (o)
        (loop for c = (read-char source nil nil)
@@ -91,7 +91,7 @@
   (backend-decode *yaml-backend* source :all t))
 
 (defun encode-to-octets (value &key (style :block))
-  (babel:string-to-octets (encode value :style style) :encoding :utf-8))
+  (encoding-protocol:encode (encode value :style style)))
 
 (defun decode-octets (octets &key)
   (decode octets))
