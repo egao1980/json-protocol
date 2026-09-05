@@ -12,7 +12,7 @@
     (pathname source)
     (string source)
     ((vector (unsigned-byte 8))
-     (babel:octets-to-string source :encoding :utf-8))))
+     (encoding-protocol:decode source))))
 
 (defmethod serdes-protocol:backend-make-event-parser
     ((backend json-serdes-backend) source

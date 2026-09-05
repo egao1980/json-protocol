@@ -60,7 +60,7 @@
         (text (etypecase source
                 (string source)
                 ((vector (unsigned-byte 8))
-                 (babel:octets-to-string source :encoding :utf-8))
+                 (encoding-protocol:decode source))
                 (stream
                  (with-output-to-string (o)
                    (loop for c = (read-char source nil nil)
