@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "OCI tag (empty → .asd :version)"
+        description: "OCI tag (empty → each .asd :version)"
         required: false
         default: ""
         type: string
@@ -16,8 +16,17 @@ on:
 
 jobs:
   publish:
+    strategy:
+      fail-fast: false
+      matrix:
+        system:
+          - json-protocol
+          - json-backend-jzon
+          - json-backend-yason
+          - yaml-protocol
     uses: egao1980/cl-repository/.github/workflows/publish-source.yml@main
     with:
+      system: ${{ matrix.system }}
       version: ${{ inputs.version }}
       packager-version: ${{ inputs.packager_version }}
     permissions:
