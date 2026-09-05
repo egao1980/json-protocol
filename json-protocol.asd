@@ -4,8 +4,7 @@
   :author "egao1980"
   :license "MIT"
   :depends-on ("babel" "serdes-protocol")
-  :properties (:cl-repo (:ci (:with ("json-backend-jzon" "json-backend-yason" "yaml-protocol")
-                             :sources (("serdes-protocol" :oci)))))
+  :properties (:cl-repo (:ci (:with ("json-backend-jzon" "json-backend-yason" "yaml-protocol"))))
   :serial t
   :pathname "src"
   :components ((:file "package")
