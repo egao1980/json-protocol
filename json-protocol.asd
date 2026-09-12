@@ -4,7 +4,7 @@
   :author "egao1980"
   :license "MIT"
   :depends-on ("encoding-protocol" "serdes-protocol")
-  :properties (:cl-repo (:ci (:with ("json-backend-jzon" "json-backend-yason" "yaml-protocol"))))
+  :properties (:cl-repo (:ci (:with ("json-backend-jzon" "json-backend-yason"))))
   :serial t
   :pathname "src"
   :components ((:file "package")
@@ -15,15 +15,14 @@
 
 (defsystem "json-protocol/tests"
   :depends-on ("json-protocol" "json-backend-jzon" "json-backend-yason"
-               "yaml-protocol" "serdes-protocol" "rove")
+               "serdes-protocol" "rove")
   :pathname "tests"
   :serial t
   :components ((:file "package")
                (:file "protocol-test")
                (:file "jzon-test")
                (:file "yason-test")
-               (:file "serdes-test")
-               (:file "yaml-test"))
+               (:file "serdes-test"))
   :perform (test-op (o c)
              (unless (symbol-call :rove :run c)
                (error "tests failed for ~A" (component-name c)))))
