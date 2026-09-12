@@ -13,6 +13,16 @@ on:
         required: false
         default: "latest"
         type: string
+      publish_yaml:
+        description: "Publish yaml-protocol from egao1980/yaml-protocol (GHCR ACL still linked here)"
+        required: false
+        default: true
+        type: boolean
+      yaml_version:
+        description: "OCI tag for yaml-protocol (empty → that repo .asd :version)"
+        required: false
+        default: "0.2.0"
+        type: string
 
 jobs:
   publish:
@@ -23,7 +33,6 @@ jobs:
           - json-protocol
           - json-backend-jzon
           - json-backend-yason
-          - yaml-protocol
     uses: egao1980/cl-repository/.github/workflows/publish-source.yml@main
     with:
       system: ${{ matrix.system }}
@@ -32,3 +41,36 @@ jobs:
     permissions:
       contents: read
       packages: write
+
+  # yaml-protocol GHCR package was first published from this repo (colocated
+  # asd). Owning-repo publish is 403 until Package → Manage Actions grants
+  # Write to egao1980/yaml-protocol. Same exception as sql-query dialects.
+  publish-yaml:
+    if: ${{ inputs.publish_yaml }}
+    runs-on: ubuntu-latest
+    container: ghcr.io/egao1980/cl-repository/ci-base:latest
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      contents: read
+      packages: write
+    env:
+      SBCL_VERSION: 2.6.7
+      ROSWELL_VERSION: "26.02.116"
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: egao1980/yaml-protocol
+          ref: main
+      - uses: egao1980/cl-repository/.github/actions/setup-lisp@main
+        with:
+          sbcl-version: ${{ env.SBCL_VERSION }}
+          roswell-version: ${{ env.ROSWELL_VERSION }}
+      - uses: egao1980/cl-repository/.github/actions/ci@main
+        with:
+          phase: publish
+          system: yaml-protocol
+          version: ${{ inputs.yaml_version }}
+          packager-version: ${{ inputs.packager_version }}
