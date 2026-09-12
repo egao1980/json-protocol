@@ -2,17 +2,17 @@
 
 CLOS JSON encode/decode for [cl-stack](https://github.com/egao1980/cl-stack) (RFC 8259).
 
-YAML 1.2 is a **superset of JSON** (JSON schema). `yaml-protocol` lives in this repo, implements serdes `:yaml`, and uses the **same Lisp value mapping**. jzon stays the RFC 8259 `:json` path — we do not parse JSON through YAML by default.
+YAML 1.2 is a **superset of JSON** (JSON schema). `yaml-protocol` **extends** `json-protocol` (`yaml-backend` ⊆ `json-backend`, `yaml-error` ⊆ `json-error`) and lives in this repo. Same Lisp value mapping. jzon stays the RFC 8259 `:json` path — we do not parse JSON through YAML by default, and `json-protocol` does **not** depend on YAML (no inverted “JSON narrows YAML” CLOS tree).
 
 | System | Role |
 |--------|------|
 | `json-protocol` | Generics, conditions, `encode` / `decode` |
 | `json-backend-jzon` | **Default** — [com.inuoe.jzon](https://github.com/Zulu-Inuoe/jzon) |
 | `json-backend-yason` | Alternate — [yason](https://github.com/phmarek/yason) |
-| `yaml-protocol` | YAML 1.2 (comments, block, anchors, multi-doc). Any JSON is valid YAML. |
+| `yaml-protocol` | YAML 1.2 — CLOS extension of `json-protocol` (comments, block, anchors, multi-doc). Any JSON is valid YAML. |
 
 OCI **0.2.0** — hard-implements [`serdes-protocol`](https://github.com/egao1980/serdes-protocol) `:json` (JSONL + event pull).  
-`yaml-protocol` **0.1.0** implements `:yaml`.  
+`yaml-protocol` **0.1.2** implements `:yaml`.  
 **Cookbook:** [json.md](https://github.com/egao1980/cl-stack/blob/main/docs/cookbooks/json.md) · [serdes.md](https://github.com/egao1980/cl-stack/blob/main/docs/cookbooks/serdes.md) · Brief: [json-protocol.md](https://github.com/egao1980/cl-stack/blob/main/docs/capabilities/json-protocol.md).
 
 ## Quick use

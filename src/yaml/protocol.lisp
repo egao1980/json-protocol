@@ -1,12 +1,14 @@
 (in-package #:yaml-protocol)
 
-;;; Same predicates as json-protocol (shared mapping).
+;;; YAML extends JSON (CLOS). Shared mapping; extra surface is :style / decode-all.
+;;; A yaml-backend is a json-backend. Do not bind *json-backend* to one by
+;;; default — JSON stays on jzon (RFC 8259), not the YAML parser.
 
 (defvar *yaml-backend* nil
   "Current YAML backend object.")
 
-(defclass yaml-backend () ()
-  (:documentation "Base class for yaml-protocol backends."))
+(defclass yaml-backend (json-protocol:json-backend) ()
+  (:documentation "YAML 1.2 backend; subclass of json-backend."))
 
 (defgeneric backend-encode (backend value &key stream style)
   (:documentation "Encode VALUE as YAML. STYLE is :block or :json."))
@@ -16,13 +18,13 @@
    ALL true → vector of documents."))
 
 (defun null-p (object)
-  (eq object :null))
+  (json-protocol:null-p object))
 
 (defun true-p (object)
-  (eq object t))
+  (json-protocol:true-p object))
 
 (defun false-p (object)
-  (and (null object) (not (eq object :null))))
+  (json-protocol:false-p object))
 
 (defun %source-string (source)
   (etypecase source

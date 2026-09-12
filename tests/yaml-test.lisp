@@ -127,3 +127,11 @@
   (ok (yaml:true-p t))
   (ok (yaml:false-p nil))
   (ok (not (yaml:false-p :null))))
+
+(deftest yaml-extends-json
+  "YAML is a CLOS extension of JSON, not a sibling and not the parent."
+  (ok (subtypep 'yaml:yaml-backend 'json-backend))
+  (ok (subtypep 'yaml:yaml-error 'json-error))
+  (ok (subtypep 'yaml:yaml-parse-error 'json-parse-error))
+  (ok (subtypep 'yaml:yaml-encode-error 'json-encode-error))
+  (ok (signals (yaml:decode "[") 'json-parse-error)))

@@ -1,6 +1,6 @@
 (defsystem "yaml-protocol"
-  :version "0.1.1"
-  :description "CLOS YAML 1.2 encode/decode for cl-stack; JSON is a subset (same Lisp mapping as json-protocol); implements serdes-protocol :yaml"
+  :version "0.1.2"
+  :description "CLOS YAML 1.2 encode/decode; extends json-protocol (JSON ⊂ YAML); implements serdes-protocol :yaml"
   :author "egao1980"
   :license "MIT"
   :depends-on ("encoding-protocol" "json-protocol" "serdes-protocol")
