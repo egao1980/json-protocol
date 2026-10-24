@@ -14,9 +14,9 @@ on:
         default: "latest"
         type: string
       publish_yaml:
-        description: "Publish yaml-protocol from egao1980/yaml-protocol (GHCR ACL still linked here)"
+        description: "Also publish yaml-protocol. Off: that repo owns the GHCR package."
         required: false
-        default: true
+        default: false
         type: boolean
       yaml_version:
         description: "OCI tag for yaml-protocol (empty → that repo .asd :version)"
@@ -42,9 +42,8 @@ jobs:
       contents: read
       packages: write
 
-  # yaml-protocol GHCR package was first published from this repo (colocated
-  # asd). Owning-repo publish is 403 until Package → Manage Actions grants
-  # Write to egao1980/yaml-protocol. Same exception as sql-query dialects.
+  # Off by default. yaml-protocol's package is published from that repo.
+  # Turning this on pushes with this repo's token and re-links the package here.
   publish-yaml:
     if: ${{ inputs.publish_yaml }}
     runs-on: ubuntu-latest
