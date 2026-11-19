@@ -4,10 +4,17 @@ name: Publish checkout
 # shared `version` input: one tag for all three systems published 0.2.1 tags
 # whose json-backend-*.asd said 0.2.0 (#19). Bump the .asd to release.
 # yaml-protocol publishes from egao1980/yaml-protocol, not from here.
+# `ref` rebuilds an older release (a commit or tag) with this workflow; the
+# system-name :latest anchor does not move back to an older version.
 
 on:
   workflow_dispatch:
     inputs:
+      ref:
+        description: "Git ref to publish (empty = the dispatched branch). A branch, tag or full commit SHA (actions/checkout does not take short SHAs)."
+        required: false
+        default: ""
+        type: string
       packager_version:
         description: "Packager image version"
         required: false
@@ -26,6 +33,7 @@ jobs:
     uses: egao1980/cl-repository/.github/workflows/publish-source.yml@main
     with:
       system: ${{ matrix.system }}
+      ref: ${{ inputs.ref }}
       packager-version: ${{ inputs.packager_version }}
     permissions:
       contents: read
