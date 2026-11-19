@@ -4,7 +4,9 @@
   :author "egao1980"
   :license "MIT"
   :depends-on ("encoding-protocol" "serdes-protocol")
-  :properties (:cl-repo (:ci (:with ("json-backend-jzon" "json-backend-yason"))))
+  ;; :provides: the backends in this checkout are their own packages.
+  :properties (:cl-repo (:provides ("json-protocol")
+                         :ci (:with ("json-backend-jzon" "json-backend-yason"))))
   :serial t
   :pathname "src"
   :components ((:file "package")
