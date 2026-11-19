@@ -10,8 +10,12 @@ YAML 1.2 is a **superset of JSON**. [`yaml-protocol`](https://github.com/egao198
 | `json-backend-jzon` | **Default** — [com.inuoe.jzon](https://github.com/Zulu-Inuoe/jzon) |
 | `json-backend-yason` | Alternate — [yason](https://github.com/phmarek/yason) |
 
-OCI **0.2.0** — hard-implements [`serdes-protocol`](https://github.com/egao1980/serdes-protocol) `:json` (JSONL + event pull).  
+OCI **0.2.1** (all three systems; octets decode through `encoding-protocol`) — hard-implements [`serdes-protocol`](https://github.com/egao1980/serdes-protocol) `:json` (JSONL + event pull).  
 **Cookbook:** [json.md](https://github.com/egao1980/cl-stack/blob/main/docs/cookbooks/json.md) · [serdes.md](https://github.com/egao1980/cl-stack/blob/main/docs/cookbooks/serdes.md) · Brief: [json-protocol.md](https://github.com/egao1980/cl-stack/blob/main/docs/capabilities/json-protocol.md).
+
+## Publish
+
+`publish-checkout.yml` publishes each system as its own package, tagged with its own `.asd` `:version`. Bump the `.asd` to release; there is no tag override.
 
 ## Quick use
 
