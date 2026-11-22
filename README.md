@@ -27,7 +27,12 @@ OCI **0.2.2** (all three systems; alist key order guaranteed; octets decode thro
 
 Value mapping: objects → string-key hash-tables; arrays → vectors; `null` → `:null`; `false`/`true` → `nil`/`t`. Encoding `nil` → `false`.
 
-**Key order (guaranteed on every backend and implementation):** an alist encodes as an object with its members in alist order, nested alists included. On a duplicate key the first occurrence wins (`assoc` semantics). A hash-table encodes in `maphash` order, which ANSI CL leaves unspecified, so use an alist when the bytes must be deterministic. Output is compact (no whitespace).
+**Deterministic encoding (every backend and implementation):** the same value always encodes to the same bytes, so output can feed content hashes, prompt-cache prefixes and golden files.
+
+- An alist (ordered input) keeps its order, nested alists included. On a duplicate key the first occurrence wins (`assoc` semantics).
+- A hash-table (unordered input) encodes with its keys sorted by `string<`, never in `maphash` order. Keys that name the same member (`:a` and `"a"`) signal `json-encode-error`.
+- A plist is a list, so it encodes as an array, not an object.
+- Output is compact (no whitespace).
 
 ```lisp
 (json-protocol:encode '(("z" . 1) ("a" . (("y" . 2) ("b" . 3))) ("z" . 9)))

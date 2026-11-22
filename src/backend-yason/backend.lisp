@@ -31,11 +31,26 @@ downcased (:foo-bar → \"foo-bar\")."
         ((null value) 'yason:false)
         (t value)))
 
+(defun %sorted-members (table)
+  "Members of hash-table TABLE as (key-string . value), sorted by STRING< on
+the key strings, so output never depends on MAPHASH order. Two keys naming
+the same member (:a and \"a\") signal JSON-ENCODE-ERROR."
+  (let ((members '()))
+    (maphash (lambda (k v) (push (cons (%object-key k) v) members)) table)
+    (setf members (sort members #'string< :key #'car))
+    (loop for (a b) on members
+          when (and b (string= (car a) (car b)))
+            do (error 'json-encode-error
+                      :message (format nil "hash-table keys collide on member ~s"
+                                       (car a))))
+    members))
+
 (defun %members (value fn)
   "Call FN with each (key value) of object VALUE: an alist in alist order,
-first occurrence of a key wins; a hash-table in MAPHASH order."
+first occurrence of a key wins; a hash-table in sorted key order (STRING<)."
   (if (hash-table-p value)
-      (maphash (lambda (k v) (funcall fn (%object-key k) v)) value)
+      (loop for (key . v) in (%sorted-members value)
+            do (funcall fn key v))
       (let ((seen (make-hash-table :test #'equal)))
         (loop for (k . v) in value
               for key = (%object-key k)
