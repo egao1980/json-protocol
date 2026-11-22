@@ -7,6 +7,12 @@
            #:json-parse-error
            #:json-encode-error
            #:json-limit-error
+           #:json-parse-limit-error
+           #:json-limit-error-limit
+           #:json-limit-error-value
+           #:*json-max-string-length*
+           #:*json-max-depth*
+           #:check-decode-limits
            #:json-error-message
            #:*json-backend*
            #:json-backend

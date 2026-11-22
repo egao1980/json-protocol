@@ -1,5 +1,5 @@
 (defsystem "json-protocol"
-  :version "0.2.2"
+  :version "0.2.3"
   :description "CLOS JSON encode/decode protocol for cl-stack (RFC 8259); implements serdes-protocol"
   :author "egao1980"
   :license "MIT"

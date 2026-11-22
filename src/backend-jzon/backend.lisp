@@ -101,11 +101,47 @@ hash-table in sorted key order (STRING<). Nothing goes through an intermediate h
       (error 'json-encode-error
              :message (format nil "jzon encode failed: ~a" e)))))
 
-(defmethod backend-decode ((backend jzon-backend) source &key)
+(defun %jzon-max-string-length (n)
+  "jzon :max-string-length for protocol limit N (NIL: none). jzon's own
+default is 1 MiB, so NIL must be passed explicitly (#25)."
+  (cond ((null n) nil)
+        ((< n 1) 1) ; jzon needs >= 1; a limit of 0 is checked after parsing
+        (t (min n (1- array-dimension-limit)))))
+
+(defun %jzon-max-depth (n)
+  "jzon :max-depth for protocol limit N. jzon's default is 128; NIL gives its
+cap, 65535."
+  (cond ((null n) nil)
+        ((< n 1) 1)
+        (t (min n #xFFFF))))
+
+(defun %limit-kind (e)
+  "Which limit jzon condition E reports: jzon only says so in its message."
+  (if (search "depth" (simple-condition-format-control e))
+      :max-depth
+      :max-string-length))
+
+(defmethod backend-decode ((backend jzon-backend) source
+                           &key max-string-length max-depth)
   (let ((*read-default-float-format* 'double-float)
         (text (%source-string source)))
     (handler-case
-        (%from-jzon (com.inuoe.jzon:parse text))
+        (check-decode-limits
+         (%from-jzon (com.inuoe.jzon:parse
+                      text
+                      :max-string-length (%jzon-max-string-length max-string-length)
+                      :max-depth (%jzon-max-depth max-depth)))
+         ;; Only limits jzon cannot express (0) are left to check here.
+         :max-string-length (and max-string-length (< max-string-length 1)
+                                 max-string-length)
+         :max-depth (and max-depth (< max-depth 1) max-depth))
+      (json-error (e) (error e))
+      (com.inuoe.jzon:json-parse-limit-error (e)
+        (let ((kind (%limit-kind e)))
+          (error 'json-parse-limit-error
+                 :limit kind
+                 :value (if (eq kind :max-depth) max-depth max-string-length)
+                 :message (format nil "jzon parse failed: ~a" e))))
       (error (e)
         (error 'json-parse-error
                :message (format nil "jzon parse failed: ~a" e))))))

@@ -45,3 +45,14 @@
     (ok (eq :value (first (third events))))
     (ok (eq :null (second (third events))))
     (ok (eq :end-array (first (car (last events)))))))
+
+(deftest event-parser-big-string
+  ;; jzon's make-parser default caps strings at 1 MiB (#25).
+  (%ensure-jzon)
+  (let* ((big (make-string (* 2 1024 1024) :initial-element #\y))
+         (parser (serdes-protocol:make-event-parser
+                  (concatenate 'string "[\"" big "\"]") :format :json)))
+    (ok (eq :begin-array (serdes-protocol:parse-next-event parser)))
+    (multiple-value-bind (ev val) (serdes-protocol:parse-next-event parser)
+      (ok (eq :value ev))
+      (ok (string= big val)))))
