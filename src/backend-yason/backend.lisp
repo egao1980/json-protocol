@@ -9,23 +9,78 @@
   (prog1 (setf *json-backend* (make-yason-backend))
     (install-serdes-json-hooks)))
 
+(defun %object-key (key)
+  "JSON member name for an alist or hash-table KEY: a string as is, a symbol
+downcased (:foo-bar → \"foo-bar\")."
+  (if (stringp key) key (string-downcase (string key))))
+
+(defun %alist-object-p (value)
+  "True when VALUE is a non-empty alist whose keys are strings or symbols."
+  (and (consp value)
+       (every (lambda (c)
+                (and (consp c) (or (stringp (car c)) (symbolp (car c)))))
+              value)))
+
+(defun %compound-p (value)
+  (and (not (stringp value))
+       (or (hash-table-p value) (consp value) (vectorp value))))
+
+(defun %scalar (value)
+  "VALUE as yason encodes a JSON scalar: NIL → false, :NULL → null."
+  (cond ((eq value :null) :null)
+        ((null value) 'yason:false)
+        (t value)))
+
+(defun %sorted-members (table)
+  "Members of hash-table TABLE as (key-string . value), sorted by STRING< on
+the key strings, so output never depends on MAPHASH order. Two keys naming
+the same member (:a and \"a\") signal JSON-ENCODE-ERROR."
+  (let ((members '()))
+    (maphash (lambda (k v) (push (cons (%object-key k) v) members)) table)
+    (setf members (sort members #'string< :key #'car))
+    (loop for (a b) on members
+          when (and b (string= (car a) (car b)))
+            do (error 'json-encode-error
+                      :message (format nil "hash-table keys collide on member ~s"
+                                       (car a))))
+    members))
+
+(defun %members (value fn)
+  "Call FN with each (key value) of object VALUE: an alist in alist order,
+first occurrence of a key wins; a hash-table in sorted key order (STRING<)."
+  (if (hash-table-p value)
+      (loop for (key . v) in (%sorted-members value)
+            do (funcall fn key v))
+      (let ((seen (make-hash-table :test #'equal)))
+        (loop for (k . v) in value
+              for key = (%object-key k)
+              unless (gethash key seen)
+                do (setf (gethash key seen) t)
+                   (funcall fn key v)))))
+
+(defun %emit-compound (value)
+  "Write compound VALUE in the current yason:with-output context."
+  (if (or (hash-table-p value) (%alist-object-p value))
+      (yason:with-object ()
+        (%members value
+                  (lambda (key v)
+                    (if (%compound-p v)
+                        (yason:with-object-element (key) (%emit-compound v))
+                        (yason:encode-object-element key (%scalar v))))))
+      (yason:with-array ()
+        (map nil (lambda (x)
+                   (if (%compound-p x)
+                       (%emit-compound x)
+                       (yason:encode-array-element (%scalar x))))
+             value))))
+
 (defun %encode-value (value stream)
-  (cond
-    ((eq value :null)
-     (write-string "null" stream))
-    ((null value)
-     (write-string "false" stream))
-    ((eq value t)
-     (write-string "true" stream))
-    ((hash-table-p value)
-     (yason:encode value stream))
-    ((and (consp value) (every #'consp value)
-          (every (lambda (c) (or (stringp (car c)) (symbolp (car c)))) value))
-     (let ((yason:*symbol-key-encoder* #'yason:encode-symbol-as-lowercase))
-       (yason:encode-alist value stream)))
-    (t
-     (let ((yason:*symbol-key-encoder* #'yason:encode-symbol-as-lowercase))
-       (yason:encode value stream)))))
+  "Encode VALUE to STREAM. Objects and arrays go through yason's streaming
+encoder, so alist order is kept and nested alists stay objects."
+  (let ((yason:*symbol-key-encoder* #'yason:encode-symbol-as-lowercase))
+    (if (%compound-p value)
+        (yason:with-output (stream) (%emit-compound value))
+        (yason:encode (%scalar value) stream))))
 
 (defmethod backend-encode ((backend yason-backend) value &key stream false-nil)
   (declare (ignore false-nil))

@@ -6,6 +6,19 @@
 ;;;   null   → :null
 ;;;   false  → nil    true → t
 ;;; Encode: nil → JSON false; :null → JSON null.
+;;;
+;;; Deterministic encoding (normative, every backend, every implementation):
+;;; the same value always encodes to the same bytes, so output can feed
+;;; content hashes, prompt-cache prefixes and golden files.
+;;;   alist      → ordered input: members in alist order, nested alists too.
+;;;                Keys are strings (as is) or symbols (downcased). On a
+;;;                duplicate key the first occurrence wins and later ones are
+;;;                dropped (ASSOC semantics).
+;;;   hash-table → unordered input: members in sorted key order (STRING< on
+;;;                the key strings), never MAPHASH order. Two keys that name
+;;;                the same member (:a and "a") signal JSON-ENCODE-ERROR.
+;;;   plist      → not an object: a plist is a list, so it encodes as an array.
+;;; Output is compact: no whitespace between tokens.
 
 (defvar *json-backend* nil
   "Current JSON backend object (satisfies BACKEND-ENCODE / BACKEND-DECODE).")
@@ -15,7 +28,11 @@
 
 (defgeneric backend-encode (backend value &key stream false-nil)
   (:documentation "Encode VALUE to JSON string, or write to STREAM when non-nil.
-   FALSE-NIL is reserved; default nil means Lisp NIL → JSON false."))
+   FALSE-NIL is reserved; default nil means Lisp NIL → JSON false.
+   Methods must write alist members in alist order (first occurrence of a
+   duplicate key wins), without passing them through a hash-table, write
+   hash-table members sorted by STRING< on the key strings, and emit compact
+   output. See ENCODE."))
 
 (defgeneric backend-decode (backend source &key)
   (:documentation "Decode SOURCE (string, octet-vector, or character stream) to Lisp."))
@@ -30,7 +47,11 @@
   (and (null object) (not (eq object :null))))
 
 (defun encode (value &key stream (false-nil nil))
-  "Encode VALUE via *JSON-BACKEND*. Returns a string unless STREAM is given."
+  "Encode VALUE via *JSON-BACKEND*. Returns a string unless STREAM is given.
+Encoding is deterministic on every backend and implementation: an alist
+encodes as an object in alist order (first occurrence of a duplicate key
+wins), nested alists included; a hash-table encodes in sorted key order
+(STRING<), never MAPHASH order. Output is compact."
   (unless *json-backend*
     (error 'json-encode-error :message "*json-backend* is unbound — load json-backend-jzon"))
   (backend-encode *json-backend* value :stream stream :false-nil false-nil))
