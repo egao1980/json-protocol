@@ -1,5 +1,5 @@
 (defsystem "json-protocol"
-  :version "0.2.1"
+  :version "0.2.2"
   :description "CLOS JSON encode/decode protocol for cl-stack (RFC 8259); implements serdes-protocol"
   :author "egao1980"
   :license "MIT"
@@ -24,6 +24,7 @@
                (:file "protocol-test")
                (:file "jzon-test")
                (:file "yason-test")
+               (:file "conformance-test")
                (:file "serdes-test"))
   :perform (test-op (o c)
              (unless (symbol-call :rove :run c)

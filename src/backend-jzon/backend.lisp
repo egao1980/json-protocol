@@ -10,33 +10,49 @@
   (prog1 (setf *json-backend* (make-jzon-backend))
     (install-serdes-json-hooks)))
 
-(defun %to-jzon (value)
-  "Map protocol :null → CL:NULL for jzon. NIL stays NIL (JSON false)."
+(defun %object-key (key)
+  "JSON member name for an alist or hash-table KEY: a string as is, a symbol
+downcased (:foo-bar → \"foo-bar\")."
+  (if (stringp key) key (string-downcase (string key))))
+
+(defun %alist-object-p (value)
+  "True when VALUE is a non-empty alist whose keys are strings or symbols."
+  (and (consp value)
+       (every (lambda (c)
+                (and (consp c) (or (stringp (car c)) (symbolp (car c)))))
+              value)))
+
+(defun %write (writer value)
+  "Write VALUE with jzon WRITER per the json-protocol mapping. An alist is
+written as an object in alist order (first occurrence of a key wins); a
+hash-table in MAPHASH order. Nothing goes through an intermediate hash-table."
   (cond
-    ((eq value :null) 'null)
-    ((null value) nil)
-    ((stringp value) value) ; before vectorp — strings are vectors
+    ((eq value :null) (com.inuoe.jzon:write-value writer 'null))
+    ((null value) (com.inuoe.jzon:write-value writer nil))
+    ((stringp value) (com.inuoe.jzon:write-value writer value)) ; strings are vectors
     ((hash-table-p value)
-     (let ((out (make-hash-table :test #'equal)))
+     (com.inuoe.jzon:with-object writer
        (maphash (lambda (k v)
-                  (setf (gethash (if (stringp k) k (string-downcase (string k))) out)
-                        (%to-jzon v)))
-                value)
-       out))
-    ((and (consp value) (every #'consp value)
-          (every (lambda (c) (or (stringp (car c)) (symbolp (car c)))) value))
-     (let ((out (make-hash-table :test #'equal)))
-       (dolist (pair value out)
-         (setf (gethash (if (stringp (car pair))
-                            (car pair)
-                            (string-downcase (string (car pair))))
-                        out)
-               (%to-jzon (cdr pair))))))
-    ((vectorp value)
-     (map 'vector #'%to-jzon value))
-    ((and (consp value) (every (lambda (x) (not (consp x))) value))
-     (map 'vector #'%to-jzon value))
-    (t value)))
+                  (com.inuoe.jzon:write-key writer (%object-key k))
+                  (%write writer v))
+                value)))
+    ((%alist-object-p value)
+     (let ((seen (make-hash-table :test #'equal)))
+       (com.inuoe.jzon:with-object writer
+         (loop for (k . v) in value
+               for key = (%object-key k)
+               unless (gethash key seen)
+                 do (setf (gethash key seen) t)
+                    (com.inuoe.jzon:write-key writer key)
+                    (%write writer v)))))
+    ((or (consp value) (vectorp value))
+     (com.inuoe.jzon:with-array writer
+       (map nil (lambda (x) (%write writer x)) value)))
+    (t (com.inuoe.jzon:write-value writer value))))
+
+(defun %stringify (value stream)
+  (com.inuoe.jzon:with-writer (writer :stream stream)
+    (%write writer value)))
 
 (defun %from-jzon (value)
   "Map jzon CL:NULL → :null."
@@ -63,16 +79,14 @@
 
 (defmethod backend-encode ((backend jzon-backend) value &key stream false-nil)
   (declare (ignore false-nil))
-  (let ((payload (%to-jzon value)))
-    (handler-case
-        (if stream
-            (progn
-              (com.inuoe.jzon:stringify payload :stream stream)
-              (values))
-            (com.inuoe.jzon:stringify payload))
-      (error (e)
-        (error 'json-encode-error
-               :message (format nil "jzon encode failed: ~a" e))))))
+  (handler-case
+      (if stream
+          (progn (%stringify value stream) (values))
+          (with-output-to-string (out)
+            (%stringify value out)))
+    (error (e)
+      (error 'json-encode-error
+             :message (format nil "jzon encode failed: ~a" e)))))
 
 (defmethod backend-decode ((backend jzon-backend) source &key)
   (let ((*read-default-float-format* 'double-float)
