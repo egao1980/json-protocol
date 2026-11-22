@@ -3,7 +3,8 @@
 ;;;; Event / pull parser via jzon (serdes-protocol GFs).
 
 (defclass json-event-parser (serdes-protocol:serdes-event-parser)
-  ((jzon :initarg :jzon :reader %jzon-parser)))
+  ((jzon :initarg :jzon :reader %jzon-parser)
+   (max-depth :initarg :max-depth :initform nil :reader %max-depth)))
 
 (defun %event-source (source)
   "Normalize SOURCE for jzon:make-parser."
@@ -17,15 +18,19 @@
 (defmethod serdes-protocol:backend-make-event-parser
     ((backend json-serdes-backend) source
      &key max-depth max-string-length)
-  (declare (ignore backend max-depth))
-  (let* ((in (%event-source source))
-         (parser (if max-string-length
-                     (com.inuoe.jzon:make-parser in :max-string-length max-string-length)
-                     (com.inuoe.jzon:make-parser in))))
+  "NIL limits fall back to the json-protocol specials (NIL: none). jzon's own
+defaults (1 MiB strings, depth 128) are never used (#25)."
+  (declare (ignore backend))
+  (let* ((max-depth (or max-depth *json-max-depth*))
+         (max-string-length (or max-string-length *json-max-string-length*))
+         (in (%event-source source))
+         (parser (com.inuoe.jzon:make-parser
+                  in :max-string-length (%jzon-max-string-length max-string-length))))
     (make-instance 'json-event-parser
                    :backend (serdes-protocol:find-backend :json)
                    :source source
-                   :jzon parser)))
+                   :jzon parser
+                   :max-depth (%jzon-max-depth max-depth))))
 
 (defmethod serdes-protocol:parse-next-event ((parser json-event-parser))
   (multiple-value-bind (event value)
@@ -39,5 +44,6 @@
 (defmethod serdes-protocol:parse-next-element ((parser json-event-parser) &key)
   (%from-jzon
    (com.inuoe.jzon:parse-next-element (%jzon-parser parser)
+                                      :max-depth (%max-depth parser)
                                       :eof-error-p nil
                                       :eof-value :eof)))

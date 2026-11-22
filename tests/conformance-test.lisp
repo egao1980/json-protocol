@@ -137,3 +137,78 @@ implementation decides iteration order."
     (let ((clash (make-hash-table :test #'equal)))
       (setf (gethash "a" clash) 1 (gethash :a clash) 2)
       (ok (signals (encode clash) 'json-encode-error)))))
+
+;;;; Decode limits (#25). No limit by default: JSON-RPC peers (ACP, MCP)
+;;;; carry whole files and tool results. jzon's own defaults (1 MiB strings,
+;;;; depth 128) must not leak through. A caller-set limit signals
+;;;; JSON-PARSE-LIMIT-ERROR, which is also a JSON-PARSE-ERROR.
+
+(defun %big-string (n)
+  "N characters, with a non-ASCII one and an escape so the parser does work."
+  (let ((s (make-string n :initial-element #\x)))
+    (setf (char s 0) (code-char #x3bb)
+          (char s (floor n 2)) #\"
+          (char s (1- n)) #\\)
+    s))
+
+(defun %nested (depth)
+  (concatenate 'string
+               (make-string depth :initial-element #\[)
+               (make-string depth :initial-element #\])))
+
+(defun %depth-of (v)
+  (if (and (vectorp v) (not (stringp v)))
+      (1+ (if (plusp (length v)) (%depth-of (aref v 0)) 0))
+      0))
+
+(deftest-parametrize decode-string-over-3-mib
+    ((backend) :ids ("jzon" "yason") (:jzon) (:yason))
+  (with-backend (backend)
+    (let* ((n (+ (* 3 1024 1024) 17))
+           (big (%big-string n))
+           (json (encode `(("text" . ,big) (,big . 1))))
+           (value (decode json)))
+      (ok (= n (length (gethash "text" value))))
+      (ok (string= big (gethash "text" value)))
+      (ok (eql 1 (gethash big value)))
+      (ok (string= big (decode (encode big))))
+      (ok (string= big (decode-octets (encode-to-octets big)))))))
+
+(deftest-parametrize decode-deep-nesting
+    ((backend) :ids ("jzon" "yason") (:jzon) (:yason))
+  (with-backend (backend)
+    ;; Past jzon's default max-depth (128).
+    (ok (= 200 (%depth-of (decode (%nested 200)))))))
+
+(deftest-parametrize decode-caller-limits
+    ((backend) :ids ("jzon" "yason") (:jzon) (:yason))
+  (with-backend (backend)
+    (let ((json (encode (%big-string 100))))
+      (ok (string= (%big-string 100) (decode json :max-string-length 100)))
+      (ok (signals (decode json :max-string-length 99) 'json-parse-limit-error))
+      (ok (signals (decode json :max-string-length 99) 'json-parse-error))
+      (ok (signals (decode json :max-string-length 99) 'json-limit-error))
+      (handler-case (decode json :max-string-length 99)
+        (json-parse-limit-error (e)
+          (ok (eq :max-string-length (json-limit-error-limit e)))
+          (ok (eql 99 (json-limit-error-value e)))))
+      ;; Member names count too.
+      (ok (signals (decode "{\"abcdef\":1}" :max-string-length 3)
+                   'json-parse-limit-error))
+      (ok (signals (decode "\"ab\"" :max-string-length 0)
+                   'json-parse-limit-error))
+      (let ((*json-max-string-length* 99))
+        (ok (signals (decode json) 'json-parse-limit-error))
+        (ok (signals (decode-octets (encode-to-octets (%big-string 100)))
+                     'json-parse-limit-error))))
+    (ok (= 5 (%depth-of (decode (%nested 5) :max-depth 5))))
+    (ok (signals (decode (%nested 6) :max-depth 5) 'json-parse-limit-error))
+    (handler-case (decode (%nested 6) :max-depth 5)
+      (json-parse-limit-error (e)
+        (ok (eq :max-depth (json-limit-error-limit e)))))
+    (let ((*json-max-depth* 2))
+      (ok (signals (decode "{\"a\":[[1]]}") 'json-parse-limit-error))
+      (ok (hash-table-p (decode "{\"a\":[1]}"))))
+    ;; Ordinary syntax errors stay plain parse errors.
+    (handler-case (progn (decode "[1,") (ok nil))
+      (json-parse-error (e) (ok (not (typep e 'json-limit-error)))))))

@@ -23,6 +23,15 @@
 (defvar *json-backend* nil
   "Current JSON backend object (satisfies BACKEND-ENCODE / BACKEND-DECODE).")
 
+(defvar *json-max-string-length* nil
+  "Longest string (key or value, in characters) DECODE accepts, or NIL for no
+limit (the default). JSON-RPC peers (ACP, MCP) carry whole files and tool
+results, so the protocol sets no cap; bind this to cap untrusted input.")
+
+(defvar *json-max-depth* nil
+  "Deepest array/object nesting DECODE accepts, or NIL for no limit (the
+default; a backend may still have an implementation cap, jzon's is 65535).")
+
 (defclass json-backend () ()
   (:documentation "Base class for json-protocol backends."))
 
@@ -34,8 +43,39 @@
    hash-table members sorted by STRING< on the key strings, and emit compact
    output. See ENCODE."))
 
-(defgeneric backend-decode (backend source &key)
-  (:documentation "Decode SOURCE (string, octet-vector, or character stream) to Lisp."))
+(defgeneric backend-decode (backend source &key max-string-length max-depth)
+  (:documentation "Decode SOURCE (string, octet-vector, or character stream) to Lisp.
+   MAX-STRING-LENGTH / MAX-DEPTH: NIL means no limit. Input past a limit
+   signals JSON-PARSE-LIMIT-ERROR. A backend without native limits calls
+   CHECK-DECODE-LIMITS on its result. See DECODE."))
+
+(defun %limit-error (limit value)
+  (error 'json-parse-limit-error
+         :limit limit :value value
+         :message (format nil "~(~a~) ~d exceeded" limit value)))
+
+(defun check-decode-limits (value &key max-string-length max-depth)
+  "Signal JSON-PARSE-LIMIT-ERROR when decoded VALUE holds a string (member
+name or value) longer than MAX-STRING-LENGTH, or nests arrays/objects deeper
+than MAX-DEPTH. NIL means no limit. Returns VALUE. For backends whose parser
+has no limits of its own."
+  (when (or max-string-length max-depth)
+    (labels ((str (s)
+               (when (and max-string-length (> (length s) max-string-length))
+                 (%limit-error :max-string-length max-string-length)))
+             (walk (v depth)
+               (cond ((stringp v) (str v))
+                     ((or (hash-table-p v) (vectorp v))
+                      (when (and max-depth (> (1+ depth) max-depth))
+                        (%limit-error :max-depth max-depth))
+                      (if (hash-table-p v)
+                          (maphash (lambda (k x)
+                                     (when (stringp k) (str k))
+                                     (walk x (1+ depth)))
+                                   v)
+                          (loop for x across v do (walk x (1+ depth))))))))
+      (walk value 0)))
+  value)
 
 (defun null-p (object)
   (eq object :null))
@@ -56,19 +96,27 @@ wins), nested alists included; a hash-table encodes in sorted key order
     (error 'json-encode-error :message "*json-backend* is unbound — load json-backend-jzon"))
   (backend-encode *json-backend* value :stream stream :false-nil false-nil))
 
-(defun decode (source &key)
-  "Decode SOURCE via *JSON-BACKEND*."
+(defun decode (source &key (max-string-length *json-max-string-length*)
+                          (max-depth *json-max-depth*))
+  "Decode SOURCE via *JSON-BACKEND*. MAX-STRING-LENGTH and MAX-DEPTH default
+to *JSON-MAX-STRING-LENGTH* and *JSON-MAX-DEPTH* (NIL: no limit); input past
+either signals JSON-PARSE-LIMIT-ERROR."
+  (check-type max-string-length (or null (integer 0)))
+  (check-type max-depth (or null (integer 0)))
   (unless *json-backend*
     (error 'json-parse-error :message "*json-backend* is unbound — load json-backend-jzon"))
-  (backend-decode *json-backend* source))
+  (backend-decode *json-backend* source
+                  :max-string-length max-string-length :max-depth max-depth))
 
 (defun encode-to-octets (value &key (false-nil nil))
   "UTF-8 octets of (ENCODE VALUE)."
   (encoding-protocol:encode (encode value :false-nil false-nil)))
 
-(defun decode-octets (octets &key)
+(defun decode-octets (octets &key (max-string-length *json-max-string-length*)
+                                  (max-depth *json-max-depth*))
   "DECODE UTF-8 OCTETS."
-  (decode (encoding-protocol:decode octets)))
+  (decode (encoding-protocol:decode octets)
+          :max-string-length max-string-length :max-depth max-depth))
 
 (defun install-http-json-hooks ()
   "If http-protocol is loaded, bind *json-encoder* / *json-decoder* and :json serdes.

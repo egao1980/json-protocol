@@ -110,7 +110,8 @@ encoder, so alist order is kept and nested alists stay objects."
      (map 'vector #'%from-yason value))
     (t value)))
 
-(defmethod backend-decode ((backend yason-backend) source &key)
+(defmethod backend-decode ((backend yason-backend) source
+                           &key max-string-length max-depth)
   (let ((*read-default-float-format* 'double-float)
         (text (etypecase source
                 (string source)
@@ -120,12 +121,17 @@ encoder, so alist order is kept and nested alists stay objects."
                  (with-output-to-string (o)
                    (loop for c = (read-char source nil nil)
                          while c do (write-char c o)))))))
+    ;; yason's parser has no string or depth limits: check the result.
     (handler-case
-        (%from-yason
-         (yason:parse text
-                      :object-as :hash-table
-                      :json-arrays-as-vectors t
-                      :json-nulls-as-keyword t))
+        (check-decode-limits
+         (%from-yason
+          (yason:parse text
+                       :object-as :hash-table
+                       :json-arrays-as-vectors t
+                       :json-nulls-as-keyword t))
+         :max-string-length max-string-length
+         :max-depth max-depth)
+      (json-error (e) (error e))
       (error (e)
         (error 'json-parse-error
                :message (format nil "yason parse failed: ~a" e))))))

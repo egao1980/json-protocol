@@ -10,7 +10,7 @@ YAML 1.2 is a **superset of JSON**. [`yaml-protocol`](https://github.com/egao198
 | `json-backend-jzon` | **Default** — [com.inuoe.jzon](https://github.com/Zulu-Inuoe/jzon) |
 | `json-backend-yason` | Alternate — [yason](https://github.com/phmarek/yason) |
 
-OCI **0.2.2** (all three systems; alist key order guaranteed; octets decode through `encoding-protocol`) — hard-implements [`serdes-protocol`](https://github.com/egao1980/serdes-protocol) `:json` (JSONL + event pull).  
+OCI **0.2.3** (all three systems; alist key order guaranteed; octets decode through `encoding-protocol`; no decode size limits by default) — hard-implements [`serdes-protocol`](https://github.com/egao1980/serdes-protocol) `:json` (JSONL + event pull).  
 **Cookbook:** [json.md](https://github.com/egao1980/cl-stack/blob/main/docs/cookbooks/json.md) · [serdes.md](https://github.com/egao1980/cl-stack/blob/main/docs/cookbooks/serdes.md) · Brief: [json-protocol.md](https://github.com/egao1980/cl-stack/blob/main/docs/capabilities/json-protocol.md).
 
 ## Publish
@@ -23,6 +23,13 @@ OCI **0.2.2** (all three systems; alist key order guaranteed; octets decode thro
 (asdf:load-system "json-backend-jzon")              ; sets *json-backend*
 (json-protocol:encode '(("a" . 1) ("b" . :null))) ; => "{\"a\":1,\"b\":null}"
 (stack-json:decode "{\"a\":false}")                 ; nick; "a" → NIL
+```
+
+**Decode limits:** none by default — strings of any length, nesting to the backend's cap (jzon 65535), since JSON-RPC peers (ACP, MCP) carry whole files. Cap untrusted input per call or by binding a special; past a limit `decode` signals `json-parse-limit-error` (both a `json-parse-error` and a `json-limit-error`; `json-limit-error-limit` → `:max-string-length` / `:max-depth`). The jzon event parser uses the same specials.
+
+```lisp
+(json-protocol:decode text :max-string-length (* 16 1024 1024) :max-depth 64)
+(let ((json-protocol:*json-max-string-length* 65536)) (json-protocol:decode text))
 ```
 
 Value mapping: objects → string-key hash-tables; arrays → vectors; `null` → `:null`; `false`/`true` → `nil`/`t`. Encoding `nil` → `false`.
